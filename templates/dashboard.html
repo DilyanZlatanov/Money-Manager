@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Money Management</title>
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background-color: #3498db;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .site-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .btn-logout {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-logout:hover {
+            background-color: #c0392b;
+        }
+
+        .main-content {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .dashboard-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .welcome-message {
+            margin-bottom: 20px;
+        }
+
+        /* Transaction form styles */
+
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        /* Transaction list styles */
+        .transactions-list {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+
+        .no-transactions {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="logo-container">
+        <div class="logo">$</div>
+        <div class="site-name">Money Manager</div>
+    </div>
+    <div class="user-info">
+        <span>Welcome, {{ user.username }}</span>
+        <a href="{% url 'logout' %}" class="btn btn-logout">Logout</a>
+    </div>
+</header>
+
+<div class="main-content">
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="dashboard-content">
+        <div class="welcome-message">
+            <h1>Welcome to Your Dashboard</h1>
+            <p>Manage your income and expenses easily.</p>
+        </div>
+
+        <!-- Transaction Button -->
+        <button id="addTransactionBtn" class="btn btn-primary">Add New Transaction</button>
+
+        <!-- Transactions List Section -->
+        <div class="transactions-list">
+            <h2>Recent Transactions</h2>
+            <div id="transactions-container">
+                <!-- Transactions will be loaded here -->
+                <div class="no-transactions">No transactions yet. Add your first one above!</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Modal -->
+<div id="transactionModal" class="modal">
+    <div class="modal-content">
+        <span class="close">×</span>
+        <h2>Add New Transaction</h2>
+        <form method="post" action="{% url 'dashboard' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_type">Transaction Type:</label>
+                <select name="type" id="id_type" class="form-control" required>
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="id_amount">Amount:</label>
+                <input type="number" name="amount" id="id_amount" step="0.01" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="id_description">Description (optional):</label>
+                <input type="text" name="description" id="id_description" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Add Transaction</button>
+        </form>
+    </div>
+</div>
+<script>
+    // WebSocket connection
+    const socket = new WebSocket('ws://' + window.location.host + '/ws/transactions/');
+    const transactionsContainer = document.getElementById('transactions-container');
+
+    // Handle incoming messages
+    socket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        console.log('New transaction:', data);
+
+        // Remove the "no transactions" message if it exists
+        const noTransactionsMsg = document.querySelector('.no-transactions');
+        if (noTransactionsMsg) {
+            noTransactionsMsg.remove();
+        }
+
+        // Create a new transaction element
+        const transactionEl = document.createElement('div');
+        transactionEl.className = 'transaction-item';
+
+        // Format date
+        const transactionDate = new Date(data.data);
+        const formattedDate = transactionDate.toLocaleString();
+
+        // Set transaction HTML
+        transactionEl.innerHTML = `
+            <div class="transaction-info">
+                <div class="transaction-amount ${data.amount}"></div>
+                <div class="transaction-type ${data.type}">${data.type === 'income' ? '+' : '-'}${data.amount}</div>
+                <div class="transaction-description">${data.description || 'No description'}</div>
+                <div class="transaction-date">${formattedDate}</div>
+            </div>
+        `;
+
+        // Add to the container at the top
+        transactionsContainer.insertBefore(transactionEl, transactionsContainer.firstChild);
+    };
+
+    // Handle connection errors
+    socket.onerror = function (e) {
+        console.error('WebSocket error:', e);
+    };
+
+    // Handle connection close
+    socket.onclose = function (e) {
+        console.log('WebSocket connection closed:', e);
+    };
+
+    // Transaction Modal JavaScript
+    const transactionModal = document.getElementById("transactionModal");
+    const addTransactionBtn = document.getElementById("addTransactionBtn");
+    const closeBtn = document.querySelector(".close");
+
+    // When the user clicks the Add Transaction button, open the modal
+    addTransactionBtn.onclick = function () {
+        transactionModal.style.display = "block";
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    closeBtn.onclick = function () {
+        transactionModal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside the modal, close it
+    window.onclick = function (event) {
+        if (event.target === transactionModal) {
+            transactionModal.style.display = "none";
+        }
+    }
+</script>
+</body>
+</html>

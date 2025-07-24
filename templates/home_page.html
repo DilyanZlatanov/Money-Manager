@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Management</title>
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .social-login {
+            margin-top: 20px;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        .btn-google {
+            background-color: white;
+            color: #444;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 0 auto;
+        }
+
+        .btn-google:hover {
+            background-color: #f5f5f5;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background-color: #3498db;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .site-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .btn-login {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-login:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-register {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .btn-register:hover {
+            background-color: #27ae60;
+        }
+
+        .main-content {
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="logo-container">
+        <div class="logo">$</div>
+        <div class="site-name">Money Manager</div>
+    </div>
+    <div class="auth-buttons">
+        <button class="btn btn-login">Login</button>
+        <button class="btn btn-register">Register</button>
+    </div>
+</header>
+
+<div class="main-content">
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <h1>Welcome to Money Manager</h1>
+    <p>Your personal finance tracking solution</p>
+</div>
+
+<!-- Login Modal -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <span class="close">×</span>
+        <h2>Login</h2>
+        <form id="loginForm" method="post" action="/login/">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="{{ login_form.username.id_for_label }}">Email</label>
+                {{ login_form.username }}
+                {% if login_form.username.errors %}
+                    <div class="error">{{ login_form.username.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label for="{{ login_form.password.id_for_label }}">Password</label>
+                {{ login_form.password }}
+                {% if login_form.password.errors %}
+                    <div class="error">{{ login_form.password.errors }}</div>
+                {% endif %}
+            </div>
+            {% if login_form.non_field_errors %}
+                <div class="error">
+                    {% for error in login_form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <button type="submit" class="btn btn-login">Login</button>
+        </form>
+        <div class="social-login">
+            <p>Or login with:</p>
+            <button id="googleLogin" class="btn btn-google">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo"
+                     width="20">
+                Google
+            </button>
+        </div>
+    </div>
+</div>
+<script>
+    // Get the modal
+    const modal = document.getElementById("loginModal");
+
+    // Get the button that opens the modal
+    const loginBtn = document.querySelector(".btn-login");
+
+    // Get the <span> element that closes the modal
+    const closeBtn = document.querySelector(".close");
+
+    // When the user clicks the Login button, open the modal
+    loginBtn.onclick = function () {
+        modal.style.display = "block";
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    closeBtn.onclick = function () {
+        modal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside the modal, close it
+    window.onclick = function (event) {
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // Handle Google login button click
+    document.getElementById("googleLogin").addEventListener("click", function () {
+        // Redirect to Google OAuth endpoint
+        // In a real implementation, this would redirect to your backend Google auth route
+        alert("Google login functionality would be implemented here");
+        // window.location.href = "/accounts/google/login/";
+    });
+</script>
+<!-- Registration Modal -->
+<div id="registerModal" class="modal">
+    <div class="modal-content">
+        <span class="close-register">×</span>
+        <h2>Register</h2>
+        <form id="registerForm" method="post" action="/register/">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="{{ register_form.email.id_for_label }}">Email Address</label>
+                {{ register_form.email }}
+                {% if register_form.email.errors %}
+                    <div class="error">{{ register_form.email.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ register_form.password1.id_for_label }}">Password</label>
+                {{ register_form.password1 }}
+                {% if register_form.password1.errors %}
+                    <div class="error">{{ register_form.password1.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ register_form.password2.id_for_label }}">Confirm Password</label>
+                {{ register_form.password2 }}
+                {% if register_form.password2.errors %}
+                    <div class="error">{{ register_form.password2.errors }}</div>
+                {% endif %}
+            </div>
+            <button type="submit" class="btn btn-register">Register</button>
+        </form>
+        <div class="social-login">
+            <p>Or register with:</p>
+            <button id="googleRegister" class="btn btn-google">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo"
+                     width="20">
+                Google
+            </button>
+        </div>
+    </div>
+</div>
+<script>
+    // Registration Modal JavaScript
+    const registerModal = document.getElementById("registerModal");
+
+    // Get the button that opens the modal
+    const registerBtn = document.querySelector(".btn-register");
+
+    // Get the <span> element that closes the modal
+    const closeRegisterBtn = document.querySelector(".close-register");
+
+    // When the user clicks the register button, open the modal
+    registerBtn.onclick = function () {
+        registerModal.style.display = "block";
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    closeRegisterBtn.onclick = function () {
+        registerModal.style.display = "none";
+    }
+
+
+    // When the user clicks anywhere outside the modal, close it
+    window.onclick = function (event) {
+        if (event.target === registerModal) {
+            registerModal.style.display = "none";
+        }
+    }
+
+    // Handle Google registration button click
+    document.getElementById("googleRegister").addEventListener("click", function () {
+        // Redirect to Google OAuth endpoint for registration
+        alert("Google registration functionality would be implemented here");
+        // window.location.href = "/accounts/google/register/";
+    });
+
+    // Form validation for registration
+    document.getElementById("registerForm").addEventListener("submit", function (event) {
+    const password1Field = document.getElementById("id_password1");
+    const password2Field = document.getElementById("id_password2");
+
+    if (password1Field && password2Field && password1Field.value !== password2Field.value) {
+        event.preventDefault();
+        alert("Passwords do not match!");
+        }
+    });
+</script>
+</body>
+</html>
